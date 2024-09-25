@@ -16,30 +16,61 @@ plugins:
     - about
     - stream-maps
 
-    # TODO: Declare settings and their types here:
     settings:
-    - name: username
-      label: Username
-      description: The username to use for authentication
+    - name: url
+      label: URL
+      description: URL of the data source
 
-    - name: password
-      kind: password
-      label: Password
-      description: The password to use for authentication
+    - name: authType
+      label: Authentication Type
+      description: "Supported authentication types: API_KEY | JWT"
+
+    - name: apiKey
+      label: API_KEY Value
+      description: "Utilized when authType is set to API_KEY"
       sensitive: true
 
-    - name: start_date
-      kind: date_iso8601
-      label: Start Date
-      description: Initial date to start extracting data from
+    - name: apiKeyHeaderName
+      label: API_KEY Header Name
+      description: "Utilized when authType is set to API_KEY"
 
-    # TODO: Declare required settings here:
+    - name: clientId
+      label: Client Id
+      description: "Utilized when authType is set to JWT"
+
+    - name: secret
+      label: Secret
+      description: "Utilized when authType is set to JWT"
+      sensitive: true
+
+    - name: audience
+      label: Audience
+      description: "Utilized when authType is set to JWT"
+
+    - name: tokenEndpointUrl
+      label: Token Endpoint URL
+      description: "Utilized when authType is set to JWT"
+
+    - name: merchantId
+      label: Merchant Id
+      description: "Specify a customer when querying the data source"
+
+    - name: tenantId
+      label: Tenant Id
+      description: "[Optional] Specify a customer’s operation when querying the data source"
+
     settings_group_validation:
-    - [username, password]
+    - [url, authType]
+    - [apiKey, apiKeyHeaderName]  # When authType is API_KEY
+    - [clientId, secret, audience, tokenEndpointUrl]  # When authType is JWT
 
-    # TODO: Declare default configuration values here:
     config:
-      start_date: '2010-01-01T00:00:00Z'
+      url: 'https://api.flowpay-universal.com'
+      authType: "API_KEY"
+      apiKey: "token"
+      apiKeyHeaderName: "Token"
+      merchantId: "test_merchant"
+
 
   loaders:
   - name: target-jsonl

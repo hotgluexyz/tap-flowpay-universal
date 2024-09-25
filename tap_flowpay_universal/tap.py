@@ -22,7 +22,6 @@ class TapFlowpayUniversal(Tap):
         th.Property("expires_in", th.IntegerType, required=False),
         th.Property("redirect_uri", th.StringType, required=False),
         th.Property("token_url", th.StringType, required=False),
-        th.Property("start_date", th.DateTimeType, required=True),
         th.Property("merchantId", th.StringType, required=True),
         th.Property("tenantId", th.StringType, required=False),
         th.Property("url", th.StringType, required=True),
