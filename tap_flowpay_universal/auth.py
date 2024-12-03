@@ -144,6 +144,6 @@ class ApiKeyAuthenticator(APIAuthenticatorBase):
         if stream._tap.config.get("api_key_header_name") is None:
             raise MissingCredentialConfigException("Auth type `API_KEY` requires 'api_key_header_name' in config file.")
         super().__init__(stream)
-        self.auth_headers = {
+        self._auth_headers = {
             header_name: token
         }
