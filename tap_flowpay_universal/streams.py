@@ -8,9 +8,9 @@ class OrdersStream(FlowpayUniversalStream):
     """Define custom stream."""
 
     name = "orders"
-    path = "/orders"
+    path = "/get-orders"
     primary_keys = ["id", "updatedAt"]
-    records_jsonpath = "$.data[*]"
+    records_jsonpath = "$.[*]"
     replication_key = "updatedAt"
     schema = th.PropertiesList(
         th.Property("id",th.StringType),
