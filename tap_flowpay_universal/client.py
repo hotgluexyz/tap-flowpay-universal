@@ -51,10 +51,7 @@ class FlowpayUniversalStream(RESTStream):
         base_url = f"{parsed_url.scheme}://{parsed_url.netloc}"
         if base_path:
             base_url = f"{base_url}/{base_path}"
-        
-        if path_components[-1] not in ["get-orders", "orders"]:
-            raise MissingConfig("The 'url' parameter must end with '/get-orders' or '/orders'.")
-        
+                
         self._config["orders_path"] = orders_path
         self._base_url = base_url
 
