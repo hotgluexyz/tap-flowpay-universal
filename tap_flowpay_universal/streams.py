@@ -8,7 +8,6 @@ class OrdersStream(FlowpayUniversalStream):
     """Define custom stream."""
 
     name = "orders"
-    path = "/get-orders"
     primary_keys = ["id", "updatedAt"]
     records_jsonpath = "$.[*]"
     replication_key = "updatedAt"
@@ -54,3 +53,7 @@ class OrdersStream(FlowpayUniversalStream):
             th.Property("zip",th.StringType),
         ))
     ).to_dict()
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.path = self.config.get("orders_path")
