@@ -8,7 +8,7 @@ from tap_flowpay_universal.tap import TapFlowpayUniversal
 
 SAMPLE_CONFIG = {
     "start_date": datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%d"),
-    "merchantId": "test_merchant",
+    "merchant_id": "test_merchant",
     "url": "https://test.flowpay.com",    
 }
 

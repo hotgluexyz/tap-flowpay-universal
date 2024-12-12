@@ -35,7 +35,7 @@ class FlowpayUniversalStream(RESTStream):
                 self, self._tap.config_file, self._tap.config.get("token_url")
             )
         if self._tap.config.get("auth_type") == "API_KEY":
-            return ApiKeyAuthenticator(self, self._tap.config.get("api_key"), self._tap.config.get("api_key_header_name"))
+            return ApiKeyAuthenticator(self, self._tap.config.get("api_key"), "X-API-Key")
         raise MissingConfig("Auth type should be `API_KEY` or `JWT`.")
 
     @property
@@ -49,12 +49,12 @@ class FlowpayUniversalStream(RESTStream):
 
     def get_url_params(self, context, next_page_token):
         params: dict = {}
-        if not self._tap.config.get("merchantId"):
-            raise MissingConfig("The request requires 'merchantId' in config file.")
-        params["merchantId"] = self._config.get("merchantId")
+        if not self._tap.config.get("merchant_id"):
+            raise MissingConfig("The request requires 'merchant_id' in config file.")
+        params["merchantId"] = self._config.get("merchant_id")
 
-        if self._config.get("tenantId"):
-            params["tenantId"] = self._config.get("tenantId")
+        if self._config.get("tenant_id"):
+            params["tenantId"] = self._config.get("tenant_id")
 
         if next_page_token:
             params["page"] = next_page_token
