@@ -6,11 +6,10 @@ def api_key_config():
     return {
         "url": "https://api.flowpay-universal.com",
         "start_date": "2022-01-01T00:00:00Z",
-        "merchantId": "test_merchant",
+        "merchant_id": "test_merchant",
         "url": "https://test.flowpay.com",
         "auth_type": "API_KEY",
         "api_key": "token",
-        "api_key_header_name": "Token",
     }
 
 @pytest.fixture
@@ -25,7 +24,7 @@ def oauth_config():
         "client_secret": "test_client_secret",
         "redirect_uri": "https://example.com/oauth/callback",
         "start_date": "2022-01-01T00:00:00Z",
-        "merchantId": "test_merchant",
+        "merchant_id": "test_merchant",
         "url": "https://test.flowpay.com",
         "auth_type": "JWT",
     }

@@ -23,11 +23,10 @@ class TapFlowpayUniversal(Tap):
         th.Property("redirect_uri", th.StringType, required=False),
         th.Property("token_url", th.StringType, required=False),
         th.Property("start_date", th.DateTimeType, required=True),
-        th.Property("merchantId", th.StringType, required=True),
-        th.Property("tenantId", th.StringType, required=False),
+        th.Property("merchant_id", th.StringType, required=True),
+        th.Property("tenant_id", th.StringType, required=False),
         th.Property("url", th.StringType, required=True),
         th.Property("api_key", th.StringType, required=False),
-        th.Property("api_key_header_name", th.StringType, required=False),
         th.Property("auth_type", th.StringType, required=False),
     ).to_dict()
 
