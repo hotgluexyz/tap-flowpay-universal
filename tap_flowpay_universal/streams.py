@@ -8,10 +8,14 @@ class OrdersStream(FlowpayUniversalStream):
     """Define custom stream."""
 
     name = "orders"
-    path = "/get-orders"
     primary_keys = ["id", "updatedAt"]
     records_jsonpath = "$.[*]"
     replication_key = "updatedAt"
+    
+    @property
+    def path(self):
+        return self.config.get("orders_path")
+    
     schema = th.PropertiesList(
         th.Property("id",th.StringType),
         th.Property("createdAt",th.DateTimeType),

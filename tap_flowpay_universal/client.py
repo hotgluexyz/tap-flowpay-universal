@@ -1,6 +1,7 @@
 """REST client handling, including FlowpayUniversalStream base class."""
 
 from functools import lru_cache
+from urllib.parse import urlparse
 
 from singer_sdk.streams import RESTStream
 
@@ -22,10 +23,41 @@ class FlowpayUniversalStream(RESTStream):
     
     size = 100
 
+
+    def __init__(self, *args, **kwargs):
+        """Initialize the FlowpayUniversal stream.
+        
+        Args:
+            *args: Variable length argument list.
+            **kwargs: Arbitrary keyword arguments.
+            
+        Raises:
+            MissingConfig: If the URL is not provided in the config.
+        """
+        super().__init__(*args, **kwargs)
+        
+        url = self.config.get("url")
+        if not url:
+            raise MissingConfig("The 'url' parameter is required in config file.")
+            
+        parsed_url = urlparse(url.rstrip('/'))
+        
+        # Extract the last path component as orders_path
+        path_components = [p for p in parsed_url.path.split('/') if p]
+        orders_path = f"/{path_components[-1]}" if path_components else ""
+        
+        # Construct base URL by removing orders_path
+        base_path = '/'.join(path_components[:-1]) if path_components else ''
+        base_url = f"{parsed_url.scheme}://{parsed_url.netloc}"
+        if base_path:
+            base_url = f"{base_url}/{base_path}"
+                
+        self._config["orders_path"] = orders_path
+        self._base_url = base_url
+
     @property
     def url_base(self) -> str:
-        """Return the API URL root, configurable via tap settings."""
-        return self.config.get("url")
+        return self._base_url
 
     @property
     @lru_cache(maxsize=None)
