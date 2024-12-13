@@ -11,6 +11,11 @@ class OrdersStream(FlowpayUniversalStream):
     primary_keys = ["id", "updatedAt"]
     records_jsonpath = "$.[*]"
     replication_key = "updatedAt"
+    
+    @property
+    def path(self):
+        return self.config.get("orders_path")
+    
     schema = th.PropertiesList(
         th.Property("id",th.StringType),
         th.Property("createdAt",th.DateTimeType),
@@ -53,7 +58,3 @@ class OrdersStream(FlowpayUniversalStream):
             th.Property("zip",th.StringType),
         ))
     ).to_dict()
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.path = self.config.get("orders_path")
