@@ -5,7 +5,7 @@ from urllib.parse import urlparse
 
 from singer_sdk.streams import RESTStream
 
-from tap_flowpay_universal.auth import OAuth2Authenticator, ApiKeyAuthenticator
+from tap_flowpay_universal.auth import MissingCredentialConfigException, OAuth2Authenticator, ApiKeyAuthenticator
 
 
 class MissingConfig(Exception):
@@ -62,13 +62,18 @@ class FlowpayUniversalStream(RESTStream):
     @property
     @lru_cache(maxsize=None)
     def authenticator(self):
-        if self._tap.config.get("auth_type") == "JWT":
-            return OAuth2Authenticator(
-                self, self._tap.config_file, self._tap.config.get("token_url")
-            )
-        if self._tap.config.get("auth_type") == "API_KEY":
-            return ApiKeyAuthenticator(self, self._tap.config.get("api_key"), "X-API-Key")
-        raise MissingConfig("Auth type should be `API_KEY` or `JWT`.")
+        """Return a new authenticator object."""
+        auth_type = self._tap.config.get("auth_type")
+        
+        if not auth_type:
+            raise MissingConfig("The 'auth_type' parameter is required in config file.")
+            
+        if auth_type == "JWT":
+            return OAuth2Authenticator(self)
+        elif auth_type == "API_KEY":
+            return ApiKeyAuthenticator(self)
+        else:
+            raise MissingConfig("Auth type must be either 'JWT' or 'API_KEY'")
 
     @property
     def http_headers(self) -> dict:
