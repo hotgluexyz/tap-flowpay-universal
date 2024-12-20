@@ -19,22 +19,18 @@ class OAuth2Authenticator(APIAuthenticatorBase):
     def __init__(
         self,
         stream: RESTStreamBase,
-        config_file: Optional[str] = None,
         auth_endpoint: Optional[str] = None,
     ) -> None:
         if stream._tap.config.get("client_id") is None:
             raise MissingCredentialConfigException("Auth type `JWT` requires `client_id` in config file.")
         if stream._tap.config.get("client_secret") is None:
             raise MissingCredentialConfigException("Auth type `JWT` requires `client_secret` in config file.")
-        if stream._tap.config.get("redirect_uri") is None:
-            raise MissingCredentialConfigException("Auth type `JWT` requires `redirect_uri` in config file.")
-        if stream._tap.config.get("refresh_token") is None:
-            raise MissingCredentialConfigException("Auth type `JWT` requires `refresh_token` in config file.")
-        if stream._tap.config.get("redirect_uri") is None:
-            raise MissingCredentialConfigException("Auth type `JWT` requires `redirect_uri` in config file.")
+        if stream._tap.config.get("audience") is None:
+            raise MissingCredentialConfigException("Auth type `JWT` requires `audience` in config file.")
+        if stream._tap.config.get("token_endpoint_url") is None:
+            raise MissingCredentialConfigException("Auth type `JWT` requires `token_endpoint_url` in config file.")
         super().__init__(stream=stream)
-        self._auth_endpoint = auth_endpoint
-        self._config_file = config_file
+        self._auth_endpoint = auth_endpoint or stream._tap.config.get("token_endpoint_url")
         self._tap = stream._tap
 
     @property
@@ -68,13 +64,12 @@ class OAuth2Authenticator(APIAuthenticatorBase):
 
     @property
     def oauth_request_body(self) -> dict:
-        """Define the OAuth request body for the hubspot API."""
+        """Define the OAuth request body for the Client Credentials flow."""
         return {
             "client_id": self._tap._config["client_id"],
             "client_secret": self._tap._config["client_secret"],
-            "redirect_uri": self._tap._config["redirect_uri"],
-            "refresh_token": self._tap._config["refresh_token"],
-            "grant_type": "refresh_token",
+            "audience": self._tap._config["audience"],
+            "grant_type": "client_credentials",
         }
 
     def is_token_valid(self) -> bool:
@@ -123,7 +118,10 @@ class OAuth2Authenticator(APIAuthenticatorBase):
             )
         token_json = token_response.json()
         self.access_token = token_json["access_token"]
-        expires_in = request_time + token_json["expires_in"]
+        if "expires_in" in token_json:
+            expires_in = request_time + token_json["expires_in"]
+        else:
+            expires_in = request_time + 3600  # Default to 1 hour if expires_in is not present
 
         self._tap._config["access_token"] = token_json["access_token"]
         self._tap._config["expires_in"] = expires_in
@@ -134,14 +132,13 @@ class OAuth2Authenticator(APIAuthenticatorBase):
 class ApiKeyAuthenticator(APIAuthenticatorBase):
     """API Authenticator for API KEY flows."""
 
-    def __init__(self,
+    def __init__(
+        self,
         stream: RESTStreamBase,
-        token: Optional[str] = None,
-        header_name: Optional[str] = None
     ) -> None:
         if stream._tap.config.get("api_key") is None:
             raise MissingCredentialConfigException("Auth type `API_KEY` requires 'api_key' in config file.")
         super().__init__(stream)
         self._auth_headers = {
-            header_name: token
+            "X-API-Key": stream._tap.config["api_key"]
         }
