@@ -12,6 +12,9 @@ class OrdersStream(FlowpayUniversalStream):
     records_jsonpath = "$.[*]"
     replication_key = "updatedAt"
 
+    @property
+    def path(self):
+        return self.config.get("orders_path")
     
     schema = th.PropertiesList(
         th.Property("id",th.StringType),
