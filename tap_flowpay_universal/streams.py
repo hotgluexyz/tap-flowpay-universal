@@ -14,7 +14,8 @@ class OrdersStream(FlowpayUniversalStream):
 
     @property
     def path(self):
-        return self.config.get("orders_path")
+        if self.config.get("auth_type") == "API_KEY":
+            return self.config.get("orders_path")
     
     schema = th.PropertiesList(
         th.Property("id",th.StringType),
