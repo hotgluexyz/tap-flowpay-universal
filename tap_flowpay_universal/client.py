@@ -5,7 +5,7 @@ from urllib.parse import urlparse
 
 from singer_sdk.streams import RESTStream
 
-from tap_flowpay_universal.auth import MissingCredentialConfigException, OAuth2Authenticator, ApiKeyAuthenticator
+from tap_flowpay_universal.auth import OAuth2Authenticator, ApiKeyAuthenticator
 
 
 class MissingConfig(Exception):
@@ -15,13 +15,7 @@ class MissingConfig(Exception):
 class FlowpayUniversalStream(RESTStream):
     """FlowpayUniversal stream class."""
 
-    # Update this value if necessary or override `parse_response`.
-    records_jsonpath = "$[*]"
-
-    # Update this value if necessary or override `get_new_paginator`.
-    next_page_token_jsonpath = "$.next_page"  # noqa: S105
-    
-    size = 100
+    page_size = 100
 
 
     def __init__(self, *args, **kwargs):
@@ -84,6 +78,65 @@ class FlowpayUniversalStream(RESTStream):
             headers["User-Agent"] = self.config.get("user_agent")
         return headers
 
+    def _extract_records(self, data):
+        """Extract records from response data, auto-detecting format.
+        
+        Supports two formats:
+        - Plain array: [{...}, {...}]
+        - Wrapped: {"data": [{...}, {...}], ...}
+        
+        Args:
+            data: Parsed JSON response data
+            
+        Returns:
+            tuple: (records list, format_recognized bool)
+        """
+        if isinstance(data, list):
+            return data, True
+        elif isinstance(data, dict) and "data" in data:
+            # Use `or []` to handle {"data": null} case where .get() returns None
+            return data.get("data") or [], True
+        else:
+            return [], False
+
+    def get_next_page_token(self, response, previous_token):
+        """Return next page token supporting both cursor and count-based pagination.
+        
+        Pagination modes (per spec):
+        1. Cursor-based: If API returns `nextPage` in response, use that value
+        2. Count-based: If no `nextPage`, increment page number while response 
+           contains exactly `page_size` records
+        
+        Args:
+            response: The HTTP response object
+            previous_token: The previous page token (cursor or page number)
+            
+        Returns:
+            Next page token, or None if no more pages
+        """
+        data = response.json()
+        
+        # Mode 1: Cursor-based pagination - check for nextPage in response
+        if isinstance(data, dict) and "nextPage" in data:
+            return data.get("nextPage")  # Returns None if nextPage is null
+        
+        # Mode 2: Count-based pagination - check response size
+        records, _ = self._extract_records(data)
+        record_count = len(records)
+        
+        if record_count > self.page_size:
+            # API returned more than requested - ignoring pagination, stop
+            self.logger.info(f"API returned {record_count} records (requested {self.page_size}), pagination not supported")
+            return None
+        
+        if record_count < self.page_size:
+            # Fewer records than page_size means no more pages
+            return None
+        
+        # Exactly page_size records - more pages may be available
+        current_page = previous_token if isinstance(previous_token, int) else 0
+        return current_page + 1
+
     def get_url_params(self, context, next_page_token):
         params: dict = {}
         if not self._tap.config.get("merchant_id"):
@@ -93,11 +146,38 @@ class FlowpayUniversalStream(RESTStream):
         if self._config.get("tenant_id"):
             params["tenantId"] = self._config.get("tenant_id")
 
-        if next_page_token:
+        # Only send page parameter for subsequent requests (pagination)
+        if next_page_token is not None:
             params["page"] = next_page_token
         
-        if self.size:
-            params["size"] = self.size
+        params["size"] = self.page_size
         return params
+
+    def prepare_request(self, context, next_page_token):
+        """Prepare the request and log the full URL."""
+        request = super().prepare_request(context, next_page_token)
+        self.logger.info(f"Request URL: {request.url}")
+        return request
+
+    def parse_response(self, response):
+        """Parse the response, auto-detecting format (plain array or wrapped in 'data').
+        
+        Raises an error if response format is unrecognized (not a list or dict with 'data' key).
+        """
+        data = response.json()
+        records, format_recognized = self._extract_records(data)
+        
+        # Only fail if format is unrecognized and response has content
+        # Legitimate empty responses (e.g., {"data": [], "total": 0}) are valid
+        if not format_recognized and len(response.content) > 100:
+            raise RuntimeError(
+                f"API returned {len(response.content)} bytes but response format is not supported. "
+                f"Expected a list or dict with 'data' key. Response preview: {str(data)[:500]}"
+            )
+        
+        self.logger.info(f"Extracted {len(records)} records from response")
+        
+        for record in records:
+            yield record
     
     

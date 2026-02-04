@@ -21,7 +21,11 @@ class TapFlowpayUniversal(Tap):
         parse_env_config=False,
         validate_config=True,
     ) -> None:
-        self.config_file = config[0]
+        # Handle both dict config (tests) and list of file paths (CLI)
+        if isinstance(config, list) and len(config) > 0:
+            self.config_file = config[0]
+        else:
+            self.config_file = None
         super().__init__(config, catalog, state, parse_env_config, validate_config)
 
     config_jsonschema = th.PropertiesList(
